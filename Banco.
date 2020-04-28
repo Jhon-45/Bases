@@ -1,0 +1,721 @@
+set client_encoding='LATIN1';
+
+create schema lugar;
+
+create table lugar.departamento(
+dep_id varchar(4) not null,
+dep_nombre varchar(100) not null,
+primary key(dep_id),
+unique(dep_nombre)
+);
+
+create table lugar.municipio(
+mun_id varchar(6) not null,
+mun_nombre varchar(100) not null,
+dep_id varchar(4) not null,
+primary key(mun_id,dep_id),
+unique(dep_id,mun_nombre),
+foreign key (dep_id) 
+  references 
+  lugar.departamento(dep_id) 
+  on update cascade on delete restrict
+);
+
+copy lugar.departamento (dep_id,dep_nombre) from 'c:\banco\departamento.csv' delimiter as ';' csv;
+copy lugar.municipio (mun_id,mun_nombre,dep_id) from 'c:\banco\municipio.csv' delimiter as ';' csv;
+
+create schema talento;
+
+create table talento.tipo_documento(
+tid_id varchar(2)  not null,
+tid_nombre varchar(50) not null,
+primary key (tid_id),
+unique(tid_nombre)
+);
+
+
+insert into talento.tipo_documento values ('cc','Cédula de Ciudadanía');
+insert into talento.tipo_documento values ('ti','Tarjeta de Identidad');
+
+create table talento.persona (
+per_id varchar (20) not null,
+tid_id varchar(2) not null,
+per_nombre varchar (100) not null,
+per_apellido varchar (100) not null,
+per_telefono varchar (50) not null,
+per_email varchar (100) not null,
+per_direccion varchar(100) not null,
+mun_id varchar(6) not null,
+dep_id varchar(4) not null,
+primary key (per_id),
+check (position ('@' in per_email) >1
+ and position ('@' in per_email) <> length (per_email) and
+	position ('@' in substring (per_email from position ('@' in per_email)+1))=0),
+foreign key (tid_id) references talento.tipo_documento (tid_id) on update cascade on delete restrict,
+foreign key (mun_id,dep_id) references lugar.municipio (mun_id,dep_id) on update cascade on delete restrict
+);
+
+create table talento.cargo(
+car_id varchar(2)  not null,
+car_nombre varchar(50) not null,
+primary key (car_id),
+unique(car_nombre)
+);
+
+insert into talento.cargo values ('op','Operario');
+insert into talento.cargo values ('di','Directivo');
+
+create table talento.empleado (
+per_id varchar (20) not null,
+emp_codigo varchar (20) not null,
+emp_numero_hijos int not null,
+emp_fecha_ingreso date not null,
+emp_salario float not null,
+emp_fecha_nacimiento date not null,
+emp_jefe varchar (20),
+car_id varchar(2)  not null,
+primary key (per_id),
+unique (emp_codigo),
+check (emp_numero_hijos>=0),
+check (emp_salario>0),
+check ((current_date-emp_fecha_nacimiento)/365>=18),
+foreign key (per_id) references talento.persona (per_id) on update cascade on delete cascade,
+foreign key (emp_jefe) references talento.empleado (per_id) on update cascade on delete set null,
+foreign key (car_id) references talento.cargo (car_id) on update cascade on delete restrict
+);
+
+INSERT INTO talento.persona VALUES('60101200','cc','Olga María','Leal Cruz','3060101200','olmalecr@hotmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('88100222','cc','Javier Alexis','Rozo Barrera','3088100222','jaalroba@gmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('88100100','cc','Alexis','Caballero Florez','3088100100','alcafl@hotmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('62750310','cc','Nidya Rocio','Contreras Peñaloza','3062750310','nirocope@yahoo.es','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('60105220','cc','Ledy Yojana','Jaimes Montes','3060105220','leyojamo@hotmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('82201102','cc','José Benancio','Fonseca Montes','3082201102','JoBeFomo@gmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('61101222','cc','Leidy Carolina','Diaz Romero','3061101222','lecadiro@hotmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('88111220','cc','Daniel Pachelly','Barbosa Trujillo','3088111220','dapaba@hotmail.com','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('1091660032','cc','Johann Raul','Ortiz Paez','3191660032','joraorpa@unipamplona.edu.co','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('1118541323','cc','Dayron Aleardo','Campos','3118541323','daalca@unipamplona.edu.co','Av.0 ...','518','54');
+INSERT INTO talento.persona VALUES('88234618','cc','Ariel Sandoval','Florez','3088234618','joraorpa@unipamplona.edu.co','Av.0 ...','518','54');
+
+
+
+INSERT INTO talento.empleado VALUES('88234618','742401',1,'2003-02-08',1500000,'1969-05-11',null,'di');
+INSERT INTO talento.empleado VALUES('1091660032','752111',0,'2003-01-20',1500000,'1994-05-23',null,'di');
+INSERT INTO talento.empleado VALUES('1118541323','766001',0,'2003-01-10',1300000,'1995-10-06',null,'di');
+INSERT INTO talento.empleado VALUES('60101200','766002',0,'2013-08-20',1300000,'1995-10-06',null,'di');
+INSERT INTO talento.empleado VALUES('88100100','752001',2,'2003-02-10',660000,'1979-02-03','1091660032','op');
+INSERT INTO talento.empleado VALUES('62750310','752011',0,'2003-11-15',660000,'1980-05-26','1091660032','op');
+INSERT INTO talento.empleado VALUES('60105220','761003',3,'2005-10-10',660000,'1989-03-08','1118541323','op');
+INSERT INTO talento.empleado VALUES('61101222','761010',2,'2004-03-18',660000,'1985-10-16','1118541323','op');
+INSERT INTO talento.empleado VALUES('88111220','761212',1,'2004-03-15',660000,'1988-03-16','88234618','op');
+
+
+create table lugar.sucursal(
+suc_id varchar(20) not null,
+suc_direccion varchar(200) not null,
+suc_telefono varchar(200) not null,
+mun_id varchar(6) not null,
+dep_id varchar(4) not null,	
+per_id varchar (20) not null,
+primary key(suc_id),
+foreign key (mun_id,dep_id) references lugar.municipio(mun_id,dep_id) on update cascade on delete restrict,
+foreign key (per_id) references talento.empleado(per_id) on update cascade on delete restrict
+);
+
+create schema transaccion;
+
+create table transaccion.tipo_cuenta(
+tic_id varchar(2)  not null,
+tic_nombre varchar(50) not null,
+primary key (tic_id),
+unique(tic_nombre)
+);
+
+insert into transaccion.tipo_cuenta values ('ah','Ahorro');
+insert into transaccion.tipo_cuenta values ('co','Corriente');
+
+create table transaccion.tipo_movimiento(
+tim_id varchar(2)  not null,
+tim_nombre varchar(50) not null,
+primary key (tim_id),
+unique(tim_nombre)
+);
+
+insert into transaccion.tipo_movimiento values ('re','Retiro');
+insert into transaccion.tipo_movimiento values ('co','Consignación');
+
+create table transaccion.cuenta (
+cue_numero varchar (20) not null,
+per_id varchar (20) not null,
+tic_id varchar(2)  not null,
+cue_monto float not null,
+cue_fecha date not null default current_date,
+cue_estado boolean not null default true,
+suc_id varchar(20) not null,
+primary key (cue_numero),
+check (cue_monto>=0),
+foreign key (per_id) 
+   references talento.persona (per_id) 
+   on update cascade on delete restrict,
+foreign key (tic_id) 
+   references transaccion.tipo_cuenta (tic_id) 
+   on update cascade on delete restrict,
+foreign key (suc_id) 
+   references lugar.sucursal (suc_id) 
+   on update cascade on delete restrict   
+);
+
+create table transaccion.movimiento (
+mov_fecha date not null default current_date,
+mov_hora time not null default current_time,
+cue_numero varchar (20) not null,
+tim_id varchar(2)  not null,
+mov_monto float not null,
+primary key (mov_fecha,mov_hora,cue_numero),
+check (mov_monto>=0),
+foreign key (cue_numero) 
+  references transaccion.cuenta (cue_numero) 
+  on update cascade on delete restrict,
+foreign key (tim_id) 
+  references transaccion.tipo_movimiento (tim_id) 
+  on update cascade on delete restrict
+);
+
+
+INSERT INTO lugar.sucursal VALUES('suc1','Av. 45 No. 11-11','0975...','518','25','88234618');
+INSERT INTO lugar.sucursal VALUES('suc2','Carrera 6 No. 5-55','0975...','518','54','1091660032');
+INSERT INTO lugar.sucursal VALUES('suc3','Calle 0 No. 10-10','0975...','001','54','1118541323');
+INSERT INTO lugar.sucursal VALUES('suc4','Calle 0 No. 10-10','0975...','520','54','60101200');
+
+insert into transaccion.cuenta values ('51854000001','60101200','ah',30000000,'1990-02-15',true,'suc2');
+insert into transaccion.cuenta values ('51825000001','88100222','ah',10000000,'1990-02-15',true,'suc1');
+insert into transaccion.cuenta values ('51825000020','88100100','ah',25000000,'1990-02-15',true,'suc1');
+insert into transaccion.cuenta values ('51854000101','62750310','ah',3000000,'1990-02-15',false,'suc2');
+insert into transaccion.cuenta values ('51825000033','60105220','ah',1500000,'1990-02-15',true,'suc1');
+insert into transaccion.cuenta values ('00154001010','88111220','ah',80000000,'1990-02-15',true,'suc3');
+insert into transaccion.cuenta values ('51825000023','1118541323','ah',20000000,'1990-02-15',true,'suc1');
+insert into transaccion.cuenta values ('51854000221','1091660032','ah',30000000,'1990-02-15',true,'suc2');
+insert into transaccion.cuenta values ('51854000060','88234618','ah',18000000,'1990-02-15',true,'suc2');
+insert into transaccion.cuenta values ('52054000001','88100222','ah',5000000,'1990-02-15',true,'suc4');
+insert into transaccion.cuenta values ('00154000001','62750310','ah',2500000,'1990-02-15',true,'suc3');
+
+
+insert into transaccion.movimiento values ('2014-02-10','11:10:00','51854000001','co',200000);
+insert into transaccion.movimiento values ('2014-02-20','10:00:00','51854000001','re',200000);
+insert into transaccion.movimiento values ('2014-03-10','11:20:00','51854000001','co',300000);
+insert into transaccion.movimiento values ('2015-02-09','08:50:00','51854000001','co',200000);
+insert into transaccion.movimiento values ('2015-05-20','11:30:00','51854000001','re',200000);
+insert into transaccion.movimiento values ('2014-02-25','10:52:00','51825000020','co',100000);
+insert into transaccion.movimiento values ('2015-05-25','08:50:00','51825000020','co',100000);
+insert into transaccion.movimiento values ('2015-05-20','10:59:00','00154000001','co',100000);
+insert into transaccion.movimiento values ('2015-03-20','09:10:00','51854000221','co',100000);
+insert into transaccion.movimiento values ('2015-03-06','14:32:00','51854000221','re',100000);
+insert into transaccion.movimiento values ('2015-03-16','14:33:00','51825000023','co',100000);
+
+----------------------------------------------------------------------------
+---------------------------- AUDITORIA ----------------------------
+----------------------------- PERSONA ------------------------------------
+
+CREATE SCHEMA auditoria;  select user
+
+create table auditoria.persona (
+aud_per_id varchar (20) not null,
+aud_tid_id varchar(2) not null,
+aud_per_nombre varchar (100) not null,
+aud_per_apellido varchar (100) not null,
+aud_per_telefono varchar (50) not null,
+aud_per_email varchar (100) not null,
+aud_per_direccion varchar(100) not null,
+aud_mun_id varchar(6) not null,
+aud_dep_id varchar(4) not null,
+aud_per_operacion varchar null,
+aud_per_hora time with time zone null,
+aud_per_usuario varchar 
+);
+
+
+CREATE OR REPLACE FUNCTION
+auditoria_I_persona()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.persona(aud_per_id, aud_tid_id, aud_per_nombre,aud_per_apellido,aud_per_telefono,aud_per_email,aud_per_direccion,
+		aud_mun_id, aud_dep_id, aud_per_operacion, aud_per_hora,aud_per_usuario) 
+		VALUES(new.per_id, new.tid_id, new.per_nombre, new.per_apellido, new.per_telefono, new.per_email, new.per_direccion,
+		new.mun_id, new.dep_id,
+				 'I',
+				 current_timestamp,
+				 current_user);
+
+return new;
+end;
+$BODY$
+LANGUAGE plpgsql
+
+drop trigger "TR_auditoria_I_persona" on talento.persona;
+
+SELECT LOCALTIMESTAMP 
+SELECT now()::date;
+
+
+CREATE TRIGGER "TR_auditoria_I_persona"
+AFTER INSERT
+ON talento.persona
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_I_persona();
+
+INSERT INTO talento.persona VALUES('2020','cc','José','Montes','3082201102','JoBeFomo@gmail.com', 'asas', '001', '05');
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_D_persona()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.persona(aud_per_id, aud_tid_id, aud_per_nombre,aud_per_apellido,aud_per_telefono,aud_per_email,aud_per_direccion,
+		aud_mun_id, aud_dep_id, aud_per_operacion, aud_per_hora,aud_per_usuario) 
+		VALUES(old.per_id, old.tid_id, old.per_nombre, old.per_apellido, old.per_telefono, old.per_email, old.per_direccion,
+		old.mun_id, old.dep_id,
+				 'D',	
+				 current_timestamp,
+				 current_user);																									
+
+return old;
+end;
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_D_persona"
+BEFORE DELETE
+ON talento.persona
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_D_persona();
+
+
+DELETE  FROM talento.persona WHERE per_id = '2020';
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_U_persona()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+
+INSERT INTO  auditoria.persona(aud_per_id, aud_tid_id, aud_per_nombre,aud_per_apellido,aud_per_telefono,aud_per_email,aud_per_direccion,
+		aud_mun_id, aud_dep_id, aud_per_operacion, aud_per_hora,aud_per_usuario) 
+		VALUES(old.per_id, old.tid_id, old.per_nombre, old.per_apellido, old.per_telefono, old.per_email, old.per_direccion,
+		old.mun_id, old.dep_id,
+				 'U',
+				 current_timestamp,
+				 current_user);	
+return new;
+end;
+
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_U_persona"
+AFTER UPDATE
+ON talento.persona
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_U_persona();
+
+
+update talento.persona
+set per_nombre='Danna Paola'
+where per_id='2020';
+
+
+------------------------------------------------------------------------------------------------
+
+----------------------------- EMPLEADO -------------------------------
+
+create table auditoria.empleado (
+aud_per_id varchar (20) not null,
+aud_emp_codigo varchar (20) not null,
+aud_emp_numero_hijos int not null,
+aud_emp_fecha_ingreso date not null,
+aud_emp_salario float not null,
+aud_emp_fecha_nacimiento date not null,
+aud_emp_jefe varchar (20),
+aud_car_id varchar(2)  not null,
+aud_emp_operacion varchar null,
+aud_emp_hora time with time zone null,
+aud_emp_usuario varchar 
+);
+
+CREATE OR REPLACE FUNCTION
+auditoria_I_empleado()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.empleado(aud_per_id,aud_emp_codigo,aud_emp_numero_hijos,aud_emp_fecha_ingreso,aud_emp_salario,aud_emp_fecha_nacimiento,aud_emp_jefe,aud_car_id,aud_emp_operacion,aud_emp_hora,aud_emp_usuario) VALUES(new.per_id,new.emp_codigo,new.emp_numero_hijos,new.emp_fecha_ingreso,new.emp_salario,new.emp_fecha_nacimiento,new.emp_jefe,new.car_id,
+																																											'I',
+																																											current_timestamp,
+																																											current_user);
+return new;
+end;
+$BODY$
+LANGUAGE plpgsql
+
+
+CREATE TRIGGER "TR_auditoria_I_empleado"
+AFTER INSERT
+ON talento.empleado
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_I_empleado();
+
+
+INSERT INTO talento.empleado VALUES('88100222','76121452',2,'2004-03-15',660000,'1988-03-16','88234618','di');
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_D_empleado()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.empleado(aud_per_id,aud_emp_codigo,aud_emp_numero_hijos,aud_emp_fecha_ingreso,
+		aud_emp_salario,aud_emp_fecha_nacimiento,aud_emp_jefe,aud_car_id,aud_emp_operacion,aud_emp_hora,aud_emp_usuario) 
+		VALUES(old.per_id,old.emp_codigo,old.emp_numero_hijos,old.emp_fecha_ingreso,old.emp_salario,old.emp_fecha_nacimiento,old.emp_jefe,old.car_id,
+																		'D',
+																		current_timestamp,
+					  										   			current_user);
+
+return old;
+end;
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_D_empleado"
+BEFORE DELETE
+ON talento.empleado
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_D_empleado();
+
+
+DELETE  FROM talento.empleado WHERE emp_codigo = '76121452';
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_U_empleado()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.empleado(aud_per_id,aud_emp_codigo,aud_emp_numero_hijos,aud_emp_fecha_ingreso,aud_emp_salario,aud_emp_fecha_nacimiento,aud_emp_jefe,aud_car_id,aud_emp_operacion,aud_emp_hora,aud_emp_usuario) VALUES(new.per_id,new.emp_codigo,new.emp_numero_hijos,new.emp_fecha_ingreso,new.emp_salario,new.emp_fecha_nacimiento,new.emp_jefe,new.car_id,
+																																											'U',
+																																											current_timestamp,
+																																											current_user);
+
+return new;
+end;
+
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_U_empleado"
+AFTER UPDATE
+ON talento.empleado
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_U_empleado();
+
+
+update talento.empleado
+set emp_salario  = 45000000
+where emp_codigo ='76121452';
+
+
+------------------------------------------------------------------------------------------------ 
+------------------- CUENTA ------------------------
+
+create table auditoria.cuenta (
+aud_cue_numero varchar (20) not null,
+aud_per_id varchar (20) not null,
+aud_tic_id varchar(2)  not null,
+aud_cue_monto float not null,
+aud_cue_fecha date not null default current_date,
+aud_cue_estado boolean not null default true,
+aud_suc_id varchar(20) not null,
+aud_cue_operacion varchar null,
+aud_cue_hora time with time zone null,
+aud_cue_usuario varchar 
+);
+
+CREATE OR REPLACE FUNCTION
+auditoria_I_cuenta()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.cuenta(aud_cue_numero,aud_per_id,aud_tic_id,aud_cue_monto,aud_cue_fecha,aud_cue_estado,aud_suc_id,aud_cue_operacion,aud_cue_hora,aud_cue_usuario) VALUES(new.cue_numero,new.per_id,new.tic_id,new.cue_monto,new.cue_fecha,new.cue_estado,new.suc_id,
+																																'I',
+																																current_timestamp,
+																																current_user);
+
+return new;
+end;
+$BODY$
+LANGUAGE plpgsql
+
+
+CREATE TRIGGER "TR_auditoria_I_cuenta"
+AFTER INSERT
+ON transaccion.cuenta
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_I_cuenta();
+
+
+INSERT INTO transaccion.cuenta VALUES('0154001010','82201102','co',8000000,'1991-02-15',true,'suc3');
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_D_cuenta()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.cuenta(aud_cue_numero,aud_per_id,aud_tic_id,aud_cue_monto,aud_cue_fecha,aud_cue_estado,aud_suc_id,aud_cue_operacion,aud_cue_hora,aud_cue_usuario) VALUES(old.cue_numero,old.per_id,old.tic_id, old.cue_monto,old.cue_fecha,old.cue_estado,old.suc_id,
+																																'D',
+																																current_timestamp,
+																																current_user);
+
+return old;
+end;
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_D_cuenta"
+BEFORE DELETE
+ON transaccion.cuenta
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_D_cuenta();
+
+
+DELETE  FROM transaccion.cuenta WHERE cue_numero = '0154001010';
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_U_cuenta()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.cuenta(aud_cue_numero,aud_per_id,aud_tic_id,aud_cue_monto,aud_cue_fecha,aud_cue_estado,aud_suc_id,aud_cue_operacion,aud_cue_hora,aud_cue_usuario) VALUES(new.cue_numero,new.per_id,new.tic_id,new.cue_monto,new.cue_fecha,new.cue_estado,new.suc_id,
+																															'U',
+																															current_timestamp,
+																															current_user);
+
+return new;
+end;
+
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_U_cuenta"
+AFTER UPDATE
+ON transaccion.cuenta
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_U_cuenta();
+
+
+update transaccion.cuenta
+set cue_estado ='false'
+where cue_numero ='52054000001';
+
+
+------------------------------------------------------------------------------------------------
+------------------- MOVIMIENTO ------------------------
+
+create table auditoria.movimiento (
+aud_mov_fecha date not null default current_date,
+aud_mov_hora time not null default current_time,
+aud_cue_numero varchar (20) not null,
+aud_tim_id varchar(2)  not null,
+aud_mov_monto float not null,
+aud_mov_operacion varchar null,
+aud_hora time with time zone null,
+aud_mov_usuario varchar 
+);
+
+CREATE OR REPLACE FUNCTION
+auditoria_I_movimiento()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.movimiento(aud_mov_fecha,aud_mov_hora,aud_cue_numero,aud_tim_id,aud_mov_monto,aud_mov_operacion,aud_hora,aud_mov_usuario) VALUES(new.mov_fecha,new.mov_hora,new.cue_numero,new.tim_id,new.mov_monto,
+																										'I',
+																										current_timestamp,
+																										current_user);
+
+return new;
+end;
+$BODY$
+LANGUAGE plpgsql
+
+
+CREATE TRIGGER "TR_auditoria_I_movimiento"
+AFTER INSERT
+ON transaccion.movimiento
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_I_movimiento();
+                                            
+INSERT INTO transaccion.movimiento VALUES('2015-02-25','10:52:00','00154001010','re',100000);
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_D_movimiento()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.movimiento(aud_mov_fecha,aud_mov_hora,aud_cue_numero,aud_tim_id,aud_mov_monto,aud_mov_operacion,aud_hora,aud_mov_usuario) VALUES(old.mov_fecha,old.mov_hora,old.cue_numero,old.tim_id,old.mov_monto,
+																										'D',
+																										current_timestamp,
+																										current_user);
+
+return old;
+end;
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_D_movimiento"
+BEFORE DELETE
+ON transaccion.movimiento
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_D_movimiento();
+
+
+DELETE  FROM transaccion.movimiento WHERE mov_fecha = '2015-02-25';
+
+------------------------------------------------------------------------------------------------
+
+CREATE OR REPLACE FUNCTION
+auditoria_U_movimiento()
+RETURNS TRIGGER AS
+$BODY$ begin
+
+INSERT INTO  auditoria.movimiento(aud_mov_fecha,aud_mov_hora,aud_cue_numero,aud_tim_id,aud_mov_monto,aud_mov_operacion,aud_mov_hora,aud_mov_usuario) VALUES(new.mov_fecha,new.mov_hora,new.cue_numero,new.tim_id,new.mov_monto,
+																										'U',
+																										current_timestamp,
+																										current_user);
+
+return new;
+end;
+
+$BODY$
+LANGUAGE plpgsql
+ 
+CREATE TRIGGER "TR_auditoria_U_movimiento"
+AFTER UPDATE
+ON transaccion.movimiento
+FOR EACH ROW
+EXECUTE PROCEDURE auditoria_U_movimiento();
+
+
+update transaccion.movimiento
+set cue_estado ='false'
+where cue_numero ='52054000001';
+
+--------------------------------------------------------------------------------------
+------------------------------- TRIGGER ---------------------------------------	
+-------------  PERSONA -----------------------------
+create or replace function persona() returns trigger as
+$$
+begin 
+	if(new.per_id = null ) then 
+		raise exception 'el código de la persona no puede estar vacío';
+	end if;
+	if(exists( select * from talento.persona where per_id  = new.per_id)) then
+		raise exception 'la persona ya se encuentra registrada';
+	end if; 
+return new;
+end;
+
+$$
+language 'plpgsql';
+
+create trigger trigger_ipersona before insert on talento.persona for each row execute procedure persona ();
+
+
+
+---- CUENTA ---
+
+create  or replace function Cuenta() returns trigger as
+$$
+begin 
+
+	if(new.cue_numero = null ) then 
+			raise exception 'La cuenta no puede estar vacío';
+	end if;
+
+	if( exists( select * from transaccion.cuenta where cue_numero  = new.cue_numero)) then
+			raise exception 'La cuenta ya se encuentra registrada';
+	end if; 
+
+	if(not exists( select * from talento.persona where per_id  = new.per_id)) then
+			raise exception 'La persona no esta registrada en la base de datos';
+	end if; 
+
+	if(not exists( select * from transaccion.tipo_cuenta where ctic_id  = new.tic_id)) then
+			raise exception 'El tipo de Cuenta no esta registrada en la base de datos';
+	end if; 
+
+	if(not exists( select * from lugar.sucursal where suc_id = new.suc_id)) then
+			raise exception 'La sucursal no esta registrada en la base de datos';
+	end if; 
+
+return new;
+end;
+
+$$
+language 'plpgsql';
+
+create  trigger trigger_icuenta before insert on transaccion.cuenta for each row execute procedure Cuenta ();
+
+
+---------------------  VERIFICACION DE LA CUENTA Y RESTARLE LA TRANSACCION QUE SE VA A ENVIAR -------------------
+
+create or replace function transaccion.ai_movimiento() returns trigger as
+$$
+declare r record;
+begin
+	if exists(select * from transaccion.cuenta where cue_numero=new.cue_numero) then
+	    select * into r from transaccion.cuenta where cue_numero=new.cue_numero;
+	    if new.tim_id='re' then
+		if r.cue_monto >= new.mov_monto then
+			update transaccion.cuenta set cue_monto=cue_monto-new.mov_monto where cue_numero=new.cue_numero;
+		else
+			raise exception 'Saldo insuficiente';
+		end if;
+	    end if;
+	else
+		raise exception 'La cuenta no existe';
+	end if;
+return new;
+end;
+$$
+language plpgsql;
+
+create trigger ai_movimiento before insert on transaccion.movimiento for each row execute procedure transaccion.ai_movimiento();
+
+------------------------ VERIFICACION DE LA CUENTA Y SUMARLE LA TRANSACCION QUE ESTA RECIBIENDO ------------------
+
+create or replace function transaccion.di_movimiento() returns trigger as
+$$
+declare r record;
+begin
+	if exists(select * from transaccion.cuenta where cue_numero=new.cue_numero) then
+	    select * into r from transaccion.cuenta where cue_numero=new.cue_numero;
+	    if new.tim_id='co' then
+		update transaccion.cuenta set cue_monto=cue_monto+new.mov_monto where cue_numero=new.cue_numero;
+	    end if;
+	else
+		raise exception 'La cuenta no existe';
+	end if;
+return new;
+end;
+$$
+language plpgsql;
+
+create trigger di_movimiento after insert on transaccion.movimiento for each row execute procedure transaccion.di_movimiento();
